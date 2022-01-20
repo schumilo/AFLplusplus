@@ -251,6 +251,7 @@ int main(int argc, char **argv) {
          sizeof(AFL_DEFER_FORKSVR));
 
   int N = INT_MAX;
+  int hardcore_mode = getenv("AFL_HARDCORE") ? 1 : 0;
 
   if (argc == 2 && !strcmp(argv[1], "-")) {
 
@@ -278,6 +279,8 @@ int main(int argc, char **argv) {
 
   assert(N > 0);
 
+  u8 *new_mem = NULL, *precise_mem = hardcore_mode ? malloc(4) : NULL;
+
   __afl_manual_init();
 
   // Call LLVMFuzzerTestOneInput here so that coverage caused by initialization
@@ -300,7 +303,24 @@ int main(int argc, char **argv) {
     if (*__afl_fuzz_len) {
 
       num_runs++;
-      LLVMFuzzerTestOneInput(__afl_fuzz_ptr, *__afl_fuzz_len);
+
+      if (unlikely(hardcore_mode)) {
+
+        do {
+
+          new_mem = realloc(precise_mem, *__afl_fuzz_len);
+
+        } while (unlikely(new_mem == NULL));
+
+        precise_mem = new_mem;
+        memcpy(precise_mem, __afl_fuzz_ptr, *__afl_fuzz_len);
+        LLVMFuzzerTestOneInput(precise_mem, *__afl_fuzz_len);
+
+      } else {
+
+        LLVMFuzzerTestOneInput(__afl_fuzz_ptr, *__afl_fuzz_len);
+
+      }
 
     }
 

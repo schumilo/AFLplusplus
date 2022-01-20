@@ -279,7 +279,7 @@ int main(int argc, char **argv) {
 
   assert(N > 0);
 
-  u8 *new_mem = NULL, *precise_mem = hardcore_mode ? malloc(4) : NULL;
+  u8 *precise_mem = NULL;
 
   __afl_manual_init();
 
@@ -308,13 +308,13 @@ int main(int argc, char **argv) {
 
         do {
 
-          new_mem = realloc(precise_mem, *__afl_fuzz_len);
+          precise_mem = malloc(*__afl_fuzz_len);
 
-        } while (unlikely(new_mem == NULL));
+        } while (unlikely(precise_mem == NULL));
 
-        precise_mem = new_mem;
         memcpy(precise_mem, __afl_fuzz_ptr, *__afl_fuzz_len);
         LLVMFuzzerTestOneInput(precise_mem, *__afl_fuzz_len);
+        free(precise_mem);
 
       } else {
 

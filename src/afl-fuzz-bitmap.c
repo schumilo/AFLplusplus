@@ -788,8 +788,8 @@ save_if_interesting(afl_state_t *afl, void *mem, u32 len, u8 fault) {
 
     /* hacky */
     void* nyx_crash_log = (void*)(afl->fsrv.nyx_aux_buffer+0x582);
-    u16 nyx_crash_log_len = (u16)*(afl->fsrv.nyx_aux_buffer+0x580);
-
+    u16 nyx_crash_log_len = *((volatile u16*)(afl->fsrv.nyx_aux_buffer+0x580))
+    
     ck_write(fd, nyx_crash_log, nyx_crash_log_len, fn_log);
     close(fd);
   }

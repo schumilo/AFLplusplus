@@ -446,6 +446,7 @@ save_if_interesting(afl_state_t *afl, void *mem, u32 len, u8 fault) {
   if (unlikely(len == 0)) { return 0; }
 
   u8  fn[PATH_MAX];
+  u8  fn_log[PATH_MAX];
   u8 *queue_fn = "";
   u8  new_bits = 0, keeping = 0, res, classified = 0;
   s32 fd;
@@ -700,11 +701,21 @@ save_if_interesting(afl_state_t *afl, void *mem, u32 len, u8 fault) {
                afl->saved_crashes, afl->fsrv.last_kill_signal,
                describe_op(afl, 0, NAME_MAX - strlen("id:000000,sig:00,")));
 
+      if(afl->fsrv.nyx_mode){
+        snprintf(fn_log, PATH_MAX, "%s/crash_logs/id:%06llu,sig:%02u,%s", afl->out_dir,
+               afl->saved_crashes, afl->fsrv.last_kill_signal,
+               describe_op(afl, 0, NAME_MAX - strlen("id:000000,sig:00,")));
+      }
+
 #else
 
       snprintf(fn, PATH_MAX, "%s/crashes/id_%06llu_%02u", afl->out_dir,
                afl->saved_crashes, afl->last_kill_signal);
 
+      if(afl->fsrv.nyx_mode){
+        snprintf(fn_log, PATH_MAX, "%s/crashes/id_%06llu_%02u", afl->out_dir,
+               afl->saved_crashes, afl->last_kill_signal);
+      }
 #endif                                                    /* ^!SIMPLE_FILES */
 
       ++afl->saved_crashes;
@@ -770,6 +781,18 @@ save_if_interesting(afl_state_t *afl, void *mem, u32 len, u8 fault) {
   if (unlikely(fd < 0)) { PFATAL("Unable to create '%s'", fn); }
   ck_write(fd, mem, len, fn);
   close(fd);
+
+  if(afl->fsrv.nyx_mode){
+    fd = open(fn_log, O_WRONLY | O_CREAT | O_EXCL, DEFAULT_PERMISSION);
+    if (unlikely(fd < 0)) { PFATAL("Unable to create '%s'", fn_log); }
+
+    /* hacky */
+    void* nyx_crash_log = (void*)(afl->fsrv.nyx_aux_buffer+0x582);
+    u16 nyx_crash_log_len = (u16)*(afl->fsrv.nyx_aux_buffer+0x580);
+
+    ck_write(fd, nyx_crash_log, nyx_crash_log_len, fn_log);
+    close(fd);
+  }
 
   return keeping;
 

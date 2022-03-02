@@ -2019,6 +2019,12 @@ void setup_dirs_fds(afl_state_t *afl) {
   if (mkdir(tmp, 0700)) { PFATAL("Unable to create '%s'", tmp); }
   ck_free(tmp);
 
+  /* All recorded crash logs. */
+
+  tmp = alloc_printf("%s/crash_logs", afl->out_dir);
+  if (mkdir(tmp, 0700)) { PFATAL("Unable to create '%s'", tmp); }
+  ck_free(tmp);
+
   /* All recorded hangs. */
 
   tmp = alloc_printf("%s/hangs", afl->out_dir);

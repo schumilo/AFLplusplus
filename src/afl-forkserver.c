@@ -450,6 +450,8 @@ void afl_fsrv_start(afl_forkserver_t *fsrv, char **argv,
     fsrv->nyx_handlers->nyx_option_set_timeout(fsrv->nyx_runner, 2, 0);
     fsrv->nyx_handlers->nyx_option_apply(fsrv->nyx_runner);
 
+    fsrv->nyx_aux_buffer = fsrv->nyx_handlers->nyx_get_aux_buffer(fsrv->nyx_runner);
+
     /* dry run */
     fsrv->nyx_handlers->nyx_set_afl_input(fsrv->nyx_runner, "INIT", 4);
     switch (fsrv->nyx_handlers->nyx_exec(fsrv->nyx_runner)) {
